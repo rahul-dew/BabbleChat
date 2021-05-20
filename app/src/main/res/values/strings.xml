@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">BabbleChat</string>
+    <string name="enter_email">Enter Email</string>
+    <string name="et_password">Enter Password</string>
+    <string name="icon_image_description">App Icon Image</string>
+    <string name="login">Login</string>
+    <string name="resert_password">Reset Password</string>
+</resources>
