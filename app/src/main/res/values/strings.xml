@@ -8,4 +8,9 @@
     <string name="enter_name">Enter Name</string>
     <string name="confirm_password">Confirm Password</string>
     <string name="signup">SIGN UP</string>
+    <string name="enter_correct_email">Enter Correct Email</string>
+    <string name="password_mismatch">Password Mismatch</string>
+    <string name="user_created_success">User Created successfully</string>
+    <string name="user_signup_failed">Signup Failed + %1$s</string>
+    <string name="dont_have_account">Do not have a account?</string>
 </resources>

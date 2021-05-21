@@ -2,6 +2,8 @@ package com.overlord.babblechat.login;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Toast;
@@ -12,6 +14,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.overlord.babblechat.R;
+import com.overlord.babblechat.signup.SignupActivity;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -25,6 +28,10 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
+    }
+
+    public void tvSignupClick(View V){
+        startActivity(new Intent(this, SignupActivity.class));
     }
 
     public void btnLoginClick(View v){
