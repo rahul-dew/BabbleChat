@@ -7,15 +7,16 @@
     android:paddingBottom="6dp"
     tools:context=".login.LoginActivity">
 
-    <ImageView
+    <com.mikhaellopez.circularimageview.CircularImageView
         android:id="@+id/ivProfile"
         android:layout_width="120dp"
         android:layout_height="120dp"
         android:layout_marginTop="32dp"
+        android:cropToPadding="false"
+        android:src="@drawable/profile"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_chat" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
@@ -33,6 +34,21 @@
             android:gravity="center"
             android:orientation="vertical"
             android:padding="12dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etName"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/white"
+                    android:hint="@string/enter_name" />
+
+            </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
@@ -64,6 +80,21 @@
                     android:hint="@string/enter_password" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:passwordToggleEnabled="true">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etConfirmPassword"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@color/white"
+                    android:hint="@string/confirm_password" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <Button
                 android:id="@+id/btLogin"
                 android:layout_width="wrap_content"
@@ -72,17 +103,7 @@
                 android:onClick="btnLoginClick"
                 android:paddingLeft="32dp"
                 android:paddingRight="32dp"
-                android:text="@string/login" />
-
-            <TextView
-                android:id="@+id/textView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:paddingTop="6dp"
-                android:text="@string/resert_password"
-                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-                android:textColor="@color/dark_grey" />
+                android:text="@string/signup" />
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>

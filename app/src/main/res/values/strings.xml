@@ -5,4 +5,7 @@
     <string name="icon_image_description">App Icon Image</string>
     <string name="login">Login</string>
     <string name="resert_password">Reset Password</string>
+    <string name="enter_name">Enter Name</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="signup">SIGN UP</string>
 </resources>
