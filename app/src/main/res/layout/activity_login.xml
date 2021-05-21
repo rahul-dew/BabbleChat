@@ -61,7 +61,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:background="@color/white"
-                    android:hint="@string/et_password" />
+                    android:hint="@string/enter_password" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <Button
@@ -69,6 +69,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:onClick="btnLoginClick"
                 android:paddingLeft="32dp"
                 android:paddingRight="32dp"
                 android:text="@string/login" />
