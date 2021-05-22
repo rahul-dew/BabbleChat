@@ -4,7 +4,7 @@
     <string name="enter_password">Enter Password</string>
     <string name="icon_image_description">App Icon Image</string>
     <string name="login">Login</string>
-    <string name="resert_password">Reset Password</string>
+    <string name="reset_password">Reset Password</string>
     <string name="enter_name">Enter Name</string>
     <string name="confirm_password">Confirm Password</string>
     <string name="signup">SIGN UP</string>
@@ -24,4 +24,9 @@
     <string name="change_password">Change Password</string>
     <string name="password_change_successfully">Password change successfully</string>
     <string name="something_went_wrong">Something went wrong : %1$s</string>
+    <string name="reset_password_instruction">Reset password intruction has been sent on email %1$s</string>
+    <string name="retry">Retry</string>
+    <string name="close">Close</string>
+    <string name="failed_send_email">Failed to send email : %1$s</string>
+    <string name="resend_timer">Resend in : %1$s</string>
 </resources>
