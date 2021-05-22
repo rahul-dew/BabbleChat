@@ -13,6 +13,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.overlord.babblechat.MainActivity;
 import com.overlord.babblechat.R;
 import com.overlord.babblechat.signup.SignupActivity;
 
@@ -52,7 +53,8 @@ public class LoginActivity extends AppCompatActivity {
                 @Override
                 public void onComplete(@NonNull @org.jetbrains.annotations.NotNull Task<AuthResult> task) {
                     if(task.isSuccessful()){
-
+                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                        finish();
                     }
                     else{
                         Toast.makeText(LoginActivity.this,"Login Failed : " +
