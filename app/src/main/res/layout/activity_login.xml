@@ -46,7 +46,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@color/white"
-                    android:hint="@string/enter_email" />
+                    android:hint="@string/enter_email"
+                    android:paddingTop="26dp" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -62,7 +63,9 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:background="@color/white"
-                    android:hint="@string/enter_password" />
+                    android:hint="@string/enter_password"
+                    android:paddingTop="26dp"
+                    android:password="true" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <Button
