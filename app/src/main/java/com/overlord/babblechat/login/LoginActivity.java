@@ -13,6 +13,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.overlord.babblechat.MainActivity;
 import com.overlord.babblechat.R;
 import com.overlord.babblechat.password.ResetPasswordActivity;
@@ -68,5 +69,17 @@ public class LoginActivity extends AppCompatActivity {
 
     public void tvResetPasswordClick(View v){
         startActivity(new Intent(LoginActivity.this, ResetPasswordActivity.class));
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
+        FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
+
+        if (firebaseUser != null){
+            startActivity(new Intent(LoginActivity.this, MainActivity.class));
+            finish();
+        }
     }
 }
