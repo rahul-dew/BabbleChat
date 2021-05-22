@@ -14,4 +14,5 @@
     <string name="user_signup_failed">Signup Failed + %1$s</string>
     <string name="dont_have_account">Do not have a account?</string>
     <string name="failed_profile_update">Failed to update profile %1$s</string>
+    <string name="access_permission_required">Access permission is required</string>
 </resources>
