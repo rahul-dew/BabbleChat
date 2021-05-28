@@ -30,4 +30,5 @@
     <string name="failed_send_email">Failed to send email : %1$s</string>
     <string name="resend_timer">Resend in : %1$s</string>
     <string name="loading">Please wait...</string>
+    <string name="no_internet">Check Intenet Connection</string>
 </resources>

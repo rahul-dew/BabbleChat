@@ -15,7 +15,9 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.overlord.babblechat.MainActivity;
+import com.overlord.babblechat.MessageActivity;
 import com.overlord.babblechat.R;
+import com.overlord.babblechat.common.Util;
 import com.overlord.babblechat.password.ResetPasswordActivity;
 import com.overlord.babblechat.signup.SignupActivity;
 
@@ -52,23 +54,27 @@ public class LoginActivity extends AppCompatActivity {
             etPassword.setError(getString(R.string.enter_password));
         }
         else{
-            progressBar.setVisibility(View.VISIBLE);
-            FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
-            firebaseAuth.signInWithEmailAndPassword(email,password)
-                    .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                @Override
-                public void onComplete(@NonNull @org.jetbrains.annotations.NotNull Task<AuthResult> task) {
-                    progressBar.setVisibility(View.GONE);
-                    if(task.isSuccessful()){
-                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                        finish();
-                    }
-                    else{
-                        Toast.makeText(LoginActivity.this,"Login Failed : " +
-                                task.getException(),Toast.LENGTH_SHORT).show();
-                    }
-                }
-            });
+            if(Util.connectionAvailable(this)) {
+                progressBar.setVisibility(View.VISIBLE);
+                FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
+                firebaseAuth.signInWithEmailAndPassword(email, password)
+                        .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                            @Override
+                            public void onComplete(@NonNull @org.jetbrains.annotations.NotNull Task<AuthResult> task) {
+                                progressBar.setVisibility(View.GONE);
+                                if (task.isSuccessful()) {
+                                    startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                                    finish();
+                                } else {
+                                    Toast.makeText(LoginActivity.this, "Login Failed : " +
+                                            task.getException(), Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        });
+            }
+            else {
+                startActivity(new Intent(LoginActivity.this, MessageActivity.class));
+            }
         }
     }
 
