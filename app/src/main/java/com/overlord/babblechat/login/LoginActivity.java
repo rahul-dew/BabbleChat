@@ -23,6 +23,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private TextInputEditText etEmail, etPassword;
     private String email, password;
+    private View progressBar;
 
 
     @Override
@@ -31,6 +32,8 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
+        progressBar = findViewById(R.id.progressBar);
+
     }
 
     public void tvSignupClick(View V){
@@ -49,11 +52,13 @@ public class LoginActivity extends AppCompatActivity {
             etPassword.setError(getString(R.string.enter_password));
         }
         else{
+            progressBar.setVisibility(View.VISIBLE);
             FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
             firebaseAuth.signInWithEmailAndPassword(email,password)
                     .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                 @Override
                 public void onComplete(@NonNull @org.jetbrains.annotations.NotNull Task<AuthResult> task) {
+                    progressBar.setVisibility(View.GONE);
                     if(task.isSuccessful()){
                         startActivity(new Intent(LoginActivity.this, MainActivity.class));
                         finish();

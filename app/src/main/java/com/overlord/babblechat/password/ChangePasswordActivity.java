@@ -19,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 public class ChangePasswordActivity extends AppCompatActivity {
 
     private TextInputEditText etPassword, etConfirmPassword;
+    private View progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,6 +27,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
         setContentView(R.layout.activity_change_password);
         etPassword = findViewById(R.id.etPassword);
         etConfirmPassword = findViewById(R.id.etConfirmPassword);
+        progressBar = findViewById(R.id.progressBar);
     }
 
     public void btChangePasswordClick(View v){
@@ -41,6 +43,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
             etConfirmPassword.setError(getString(R.string.password_mismatch));
         }
         else{
+            progressBar.setVisibility(View.VISIBLE);
             FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
             FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
 
@@ -48,6 +51,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
                 firebaseUser.updatePassword(password).addOnCompleteListener(new OnCompleteListener<Void>() {
                     @Override
                     public void onComplete(@NonNull @NotNull Task<Void> task) {
+                        progressBar.setVisibility(View.GONE);
                         if(task.isSuccessful()){
                             Toast.makeText(ChangePasswordActivity.this,
                                     getString(R.string.password_change_successfully),

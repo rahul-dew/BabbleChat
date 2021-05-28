@@ -25,6 +25,7 @@ public class ResetPasswordActivity extends AppCompatActivity {
     private TextView tvMessage;
     private LinearLayout llResetPassword, llMessage;
     private Button btRetry, btClose;
+    private View progressBar;
 
 
     @Override
@@ -38,6 +39,7 @@ public class ResetPasswordActivity extends AppCompatActivity {
         llMessage = findViewById(R.id.llMessage);
         btRetry = findViewById(R.id.btRetry);
         btClose = findViewById(R.id.btRetry);
+        progressBar = findViewById(R.id.progressBar);
     }
 
     public void btResetPasswordClick(View v){
@@ -46,11 +48,13 @@ public class ResetPasswordActivity extends AppCompatActivity {
             etEmail.setError(getString(R.string.enter_email));
         }
         else{
+            progressBar.setVisibility(View.VISIBLE);
             FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
             firebaseAuth.sendPasswordResetEmail(email).addOnCompleteListener(new OnCompleteListener<Void>() {
                 @SuppressLint("SetTextI18n")
                 @Override
                 public void onComplete(@NonNull @NotNull Task<Void> task) {
+                    progressBar.setVisibility(View.GONE);
                     llResetPassword.setVisibility(View.GONE);
                     llMessage.setVisibility(View.VISIBLE);
 

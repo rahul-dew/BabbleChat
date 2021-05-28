@@ -7,6 +7,11 @@
     android:paddingBottom="6dp"
     tools:context=".login.LoginActivity">
 
+    <include
+        layout="@layout/custom_progressbar"
+        android:id="@+id/progressBar"
+        android:visibility="gone"/>
+
     <ImageView
         android:id="@+id/ivProfile"
         android:layout_width="120dp"
