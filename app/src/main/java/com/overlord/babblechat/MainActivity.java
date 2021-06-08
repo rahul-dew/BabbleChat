@@ -14,6 +14,7 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.google.android.material.tabs.TabLayout;
+import com.overlord.babblechat.findFriends.FindFriendFragment;
 import com.overlord.babblechat.profile.ProfileActivity;
 
 import org.jetbrains.annotations.NotNull;
