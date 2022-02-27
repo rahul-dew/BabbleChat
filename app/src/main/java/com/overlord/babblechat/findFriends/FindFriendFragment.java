@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +25,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.overlord.babblechat.R;
+import com.overlord.babblechat.common.Constants;
 import com.overlord.babblechat.common.NodeNames;
 
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +41,7 @@ public class FindFriendFragment extends Fragment {
     private List<FindFriendModel> findFriendModelList;
     private TextView tvEmptyFriendsList;
 
-    private DatabaseReference databaseReference;
+    private DatabaseReference databaseReference, databaseReferenceFriendRequests;
     private FirebaseUser currentUser;
 
     private View progressBar;
@@ -70,6 +72,9 @@ public class FindFriendFragment extends Fragment {
         databaseReference = FirebaseDatabase.getInstance().getReference().child(NodeNames.USERS);
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
+        databaseReferenceFriendRequests = FirebaseDatabase.getInstance().getReference()
+                .child(NodeNames.FRIEND_REQUESTS).child(currentUser.getUid());
+
         tvEmptyFriendsList.setVisibility(View.VISIBLE);
         progressBar.setVisibility(View.VISIBLE);
 
@@ -86,8 +91,27 @@ public class FindFriendFragment extends Fragment {
                         String fullName = ds.child(NodeNames.NAME).getValue().toString();
                         String photoName = ds.child(NodeNames.PHOTO).getValue().toString();
 
-                        findFriendModelList.add(new FindFriendModel(fullName, photoName, userID, false));
-                        findFriendsAdapter.notifyDataSetChanged();
+                        databaseReferenceFriendRequests.child(userID).addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull @NotNull DataSnapshot snapshot) {
+                                if(snapshot.exists()){
+                                    String requestType = snapshot.child(NodeNames.REQUEST_TYPE).getValue().toString();
+                                    if(requestType.equals(Constants.REQUEST_STATUS_SENT)){
+                                        findFriendModelList.add(new FindFriendModel(fullName, photoName, userID, true));
+                                        findFriendsAdapter.notifyDataSetChanged();
+                                    }
+                                }
+                                else{
+                                    findFriendModelList.add(new FindFriendModel(fullName, photoName, userID, false));
+                                    findFriendsAdapter.notifyDataSetChanged();
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull @NotNull DatabaseError error) {
+                                progressBar.setVisibility(View.GONE);
+                            }
+                        });
 
                         tvEmptyFriendsList.setVisibility(View.GONE);
                         progressBar.setVisibility(View.GONE);
