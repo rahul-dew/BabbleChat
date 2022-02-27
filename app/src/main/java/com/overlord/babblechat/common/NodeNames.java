@@ -11,4 +11,6 @@ public class NodeNames {
 
 
     public static final String REQUEST_TYPE = "request_type";
+    public static final String CHATS = "chats";
+    public static final String TIME_STAMP = "timestamp";
 }

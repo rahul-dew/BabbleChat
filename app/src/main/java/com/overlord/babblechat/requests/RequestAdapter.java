@@ -19,6 +19,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.overlord.babblechat.R;
@@ -35,7 +36,7 @@ import androidx.recyclerview.widget.RecyclerView;
 public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestViewHolder>{
     private Context context;
     private List<RequestModel> requestModelList;
-    private DatabaseReference databaseReferenceFriendRequests;
+    private DatabaseReference databaseReferenceFriendRequests, databaseReferenceChats;
     private FirebaseUser currentUser;
 
     public RequestAdapter(Context context, List<RequestModel> requestModelList) {
@@ -68,6 +69,65 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
 
         databaseReferenceFriendRequests = FirebaseDatabase.getInstance().getReference().child(NodeNames.FRIEND_REQUESTS);
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        databaseReferenceChats = FirebaseDatabase.getInstance().getReference().child(NodeNames.CHATS);
+
+        holder.btnAcceptRequest.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                holder.pbDecision.setVisibility(View.VISIBLE);
+                holder.btnAcceptRequest.setVisibility(View.GONE);
+                holder.btnDenyRequest.setVisibility(View.GONE);
+
+                final String userId = requestModel.getUserId();
+                databaseReferenceChats.child(currentUser.getUid()).child(userId).child(NodeNames.TIME_STAMP)
+                        .setValue(ServerValue.TIMESTAMP).addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull @NotNull Task<Void> task) {
+                        if (task.isSuccessful()){
+                            databaseReferenceChats.child(userId).child(currentUser.getUid()).child(NodeNames.TIME_STAMP)
+                                    .setValue(ServerValue.TIMESTAMP).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull @NotNull Task<Void> task) {
+                                    if (task.isSuccessful()){
+                                        databaseReferenceFriendRequests.child(currentUser.getUid()).child(userId).child(NodeNames.REQUEST_TYPE)
+                                                .setValue(Constants.REQUEST_STATUS_ACCEPTED).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                            @Override
+                                            public void onComplete(@NonNull @NotNull Task<Void> task) {
+                                                if (task.isSuccessful()){
+                                                    databaseReferenceFriendRequests.child(userId).child(currentUser.getUid()).child(NodeNames.REQUEST_TYPE)
+                                                            .setValue(Constants.REQUEST_STATUS_ACCEPTED).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                                        @Override
+                                                        public void onComplete(@NonNull @NotNull Task<Void> task) {
+                                                            if(task.isSuccessful()){
+                                                                holder.pbDecision.setVisibility(View.GONE);
+                                                                holder.btnAcceptRequest.setVisibility(View.VISIBLE);
+                                                                holder.btnDenyRequest.setVisibility(View.VISIBLE);
+                                                            }
+                                                            else{
+                                                                handleException(holder, task.getException());
+                                                            }
+                                                        }
+                                                    });
+                                                }
+                                                else{
+                                                    handleException(holder, task.getException());
+                                                }
+                                            }
+                                        });
+                                    }
+                                    else {
+                                        handleException(holder, task.getException());
+                                    }
+                                }
+                            });
+                        }
+                        else{
+                            handleException(holder, task.getException());
+                        }
+                    }
+                });
+            }
+        });
 
         holder.btnDenyRequest.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -108,6 +168,13 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
                 });
             }
         });
+    }
+
+    private void handleException(RequestViewHolder holder, Exception exception) {
+        Toast.makeText(context, context.getString(R.string.failed_to_accept_friend_Request, exception), Toast.LENGTH_SHORT).show();
+        holder.pbDecision.setVisibility(View.GONE);
+        holder.btnAcceptRequest.setVisibility(View.VISIBLE);
+        holder.btnDenyRequest.setVisibility(View.VISIBLE);
     }
 
     @Override
