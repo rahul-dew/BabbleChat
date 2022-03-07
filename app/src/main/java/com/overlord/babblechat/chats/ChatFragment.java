@@ -15,6 +15,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -75,7 +76,8 @@ public class ChatFragment extends Fragment {
         progressBar = view.findViewById(R.id.progressBar);
 
         databaseReferenceUsers = FirebaseDatabase.getInstance().getReference().child(NodeNames.USERS);
-        databaseReferenceChats = FirebaseDatabase.getInstance().getReference().child(NodeNames.CHATS);
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        databaseReferenceChats = FirebaseDatabase.getInstance().getReference().child(NodeNames.CHATS).child(currentUser.getUid());
 
         query = databaseReferenceChats.orderByChild(NodeNames.TIME_STAMP);
         childEventListener = new ChildEventListener(){

@@ -53,4 +53,7 @@
     <string name="failed_to_deny_request">Failed to deny request : %1$s</string>
     <string name="failed_to_accept_friend_Request">Failed to accept freind request : %1$s</string>
     <string name="failed_to_fetch_chat_list">Failed to fetch chat list : %1$s</string>
+    <string name="enter_message">Enter Message</string>
+    <string name="failed_send_message">Failed to send message + %1$s</string>
+    <string name="message_sent_successfully">Message sent successfully</string>
 </resources>

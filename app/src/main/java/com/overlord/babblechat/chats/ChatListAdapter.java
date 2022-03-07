@@ -1,6 +1,7 @@
 package com.overlord.babblechat.chats;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +16,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.overlord.babblechat.R;
 import com.overlord.babblechat.common.Constants;
+import com.overlord.babblechat.common.Extras;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -55,6 +57,15 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatLi
                         .placeholder(R.drawable.profile)
                         .error(R.drawable.profile)
                         .into(holder.ivProfile);
+            }
+        });
+
+        holder.llChatList.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(context, ChatActivity.class);
+                intent.putExtra(Extras.USER_KEY, chatListModel.getUserId());
+                context.startActivity(intent);
             }
         });
     }
