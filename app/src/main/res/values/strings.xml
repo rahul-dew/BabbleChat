@@ -52,4 +52,5 @@
     <string name="failed_to_fetch_friend_request">Failed to fetch friend request : %1$s</string>
     <string name="failed_to_deny_request">Failed to deny request : %1$s</string>
     <string name="failed_to_accept_friend_Request">Failed to accept freind request : %1$s</string>
+    <string name="failed_to_fetch_chat_list">Failed to fetch chat list : %1$s</string>
 </resources>
