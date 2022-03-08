@@ -1,6 +1,7 @@
 package com.overlord.babblechat.chats;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -68,7 +69,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
 
     @Override
     public int getItemCount() {
-        return 0;
+        return messageList.size();
     }
 
     public class MessageViewHolder extends RecyclerView.ViewHolder {

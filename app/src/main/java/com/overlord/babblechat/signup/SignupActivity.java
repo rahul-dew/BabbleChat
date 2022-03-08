@@ -11,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
 import android.widget.ImageView;
@@ -249,6 +250,7 @@ public class SignupActivity extends AppCompatActivity {
                                 Toast.makeText(SignupActivity.this,
                                         getString(R.string.user_signup_failed, task.getException()),
                                         Toast.LENGTH_SHORT).show();
+                                Log.d("Rahul", getString(R.string.user_signup_failed, task.getException()));
                             }
                         }
                     });

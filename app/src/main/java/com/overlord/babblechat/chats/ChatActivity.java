@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -106,9 +107,11 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
                 String currentUserRef = NodeNames.MESSAGES + "/" + currentUserId + "/" + chatUserId;
                 String chatUserRef = NodeNames.MESSAGES + "/" + chatUserId + "/" + currentUserId;
 
+
                 HashMap messageUserMap = new HashMap();
-                messageMap.put(currentUserRef + "/" + pushId, messageMap);
-                messageMap.put(chatUserRef + "/" + pushId, messageMap);
+                messageUserMap.put(currentUserRef + "/" + pushId, messageMap);
+                messageUserMap.put(chatUserRef + "/" + pushId, messageMap);
+
 
                 etMessage.setText("");
                 mRootRef.updateChildren(messageUserMap, new DatabaseReference.CompletionListener() {
@@ -142,7 +145,6 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onChildAdded(@NonNull @NotNull DataSnapshot snapshot, @Nullable @org.jetbrains.annotations.Nullable String previousChildName) {
                 MessageModel message = snapshot.getValue(MessageModel.class);
-
                 messagesList.add(message);
                 messagesAdapter.notifyDataSetChanged();
                 rvMessages.scrollToPosition(messagesList.size()-1);

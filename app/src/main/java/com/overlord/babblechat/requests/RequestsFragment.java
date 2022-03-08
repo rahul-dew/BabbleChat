@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -56,7 +57,7 @@ public class RequestsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         rvRequests = view.findViewById(R.id.rvRequests);
-        tvEmptyRequestList = view.findViewById(R.id.tvEmptyFriendList);
+        tvEmptyRequestList = view.findViewById(R.id.tvEmptyRequestsList);
         progressBar = view.findViewById(R.id.progressBar);
 
         rvRequests.setLayoutManager(new LinearLayoutManager(getActivity()));
@@ -77,11 +78,10 @@ public class RequestsFragment extends Fragment {
             public void onDataChange(@NonNull @NotNull DataSnapshot snapshot) {
                 progressBar.setVisibility(View.GONE);
                 requestModelList.clear();
-
                 for(DataSnapshot ds : snapshot.getChildren()){
                     if(ds.exists()){
                         String requestType = ds.child(NodeNames.REQUEST_TYPE).getValue().toString();
-                        if(requestType == Constants.REQUEST_STATUS_RECEIVED){
+                        if(requestType.equals(Constants.REQUEST_STATUS_RECEIVED)){
                             String userID = ds.getKey();
                             databaseReferenceUsers.child(userID).addListenerForSingleValueEvent(new ValueEventListener() {
                                 @Override
