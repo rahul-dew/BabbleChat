@@ -2,6 +2,7 @@ package com.overlord.babblechat.chats;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -15,8 +16,11 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -25,11 +29,14 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+import com.google.android.gms.auth.api.signin.internal.Storage;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -38,6 +45,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ServerValue;
+import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
@@ -47,10 +55,12 @@ import com.overlord.babblechat.common.Constants;
 import com.overlord.babblechat.common.Extras;
 import com.overlord.babblechat.common.NodeNames;
 import com.overlord.babblechat.common.Util;
+import com.overlord.babblechat.selectFriend.SelectFriendActivity;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,7 +70,8 @@ import static android.provider.MediaStore.ACTION_IMAGE_CAPTURE;
 
 public class ChatActivity extends AppCompatActivity implements View.OnClickListener{
 
-    private ImageView ivSend, ivAttachment;
+    private ImageView ivSend, ivAttachment, ivProfile;
+    private TextView tvUserName;
     private EditText etMessage;
     private DatabaseReference mRootRef;
     private FirebaseAuth firebaseAuth;
@@ -77,6 +88,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     private static final int REQUEST_CODE_PICK_IMAGE=101;
     private static final int REQUEST_CODE_PICK_VIDEO=103;
     private static final int REQUEST_CODE_CAPTURE_IMAGE=102;
+    private static final int REQUEST_CODE_FORWARD_MSG = 104;
 
 
     private DatabaseReference databaseReferenceMessages;
@@ -85,13 +97,28 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     private BottomSheetDialog bottomSheetDialog;
 
     private LinearLayout llProgress;
-
+    private String userName, photoName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
+        ActionBar actionBar = getSupportActionBar();
+        if(actionBar != null){
+            actionBar.setTitle("");
+            ViewGroup actionBarLayout = (ViewGroup) getLayoutInflater().inflate(R.layout.custom_action_bar, null);
+
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setHomeButtonEnabled(true);
+            actionBar.setElevation(0);
+
+            actionBar.setCustomView(actionBarLayout);
+            actionBar.setDisplayOptions(actionBar.getDisplayOptions()|ActionBar.DISPLAY_SHOW_CUSTOM);
+        }
+
+        ivProfile = findViewById(R.id.ivProfile);
+        tvUserName = findViewById(R.id.tvUserName);
         ivSend = findViewById(R.id.ivSend);
         ivAttachment = findViewById(R.id.ivAttachment);
         etMessage = findViewById(R.id.etMessage);
@@ -107,6 +134,27 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
         if(getIntent().hasExtra(Extras.USER_KEY)){
             chatUserId = getIntent().getStringExtra(Extras.USER_KEY);
+        }
+        if(getIntent().hasExtra(Extras.USER_NAME)){
+            userName = getIntent().getStringExtra(Extras.USER_NAME);
+        }
+        if(getIntent().hasExtra((Extras.PHOTO_NAME))){
+            photoName = getIntent().getStringExtra(Extras.PHOTO_NAME);
+        }
+
+        tvUserName.setText(userName);
+        if(!TextUtils.isEmpty(photoName)) {
+            StorageReference photoRef = FirebaseStorage.getInstance().getReference().child(Constants.IMAGES_FOLDER).child(photoName);
+            photoRef.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                @Override
+                public void onSuccess(Uri uri) {
+                    Glide.with(ChatActivity.this)
+                            .load(uri)
+                            .placeholder(R.drawable.profile)
+                            .error(R.drawable.profile)
+                            .into(ivProfile);
+                }
+            });
         }
 
         rvMessages = findViewById(R.id.rvMessages);
@@ -137,6 +185,38 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         view.findViewById(R.id.ivClose).setOnClickListener(this);
         bottomSheetDialog.setContentView(view);
 
+        if(getIntent().hasExtra(Extras.MESSAGE) && getIntent().hasExtra(Extras.MESSAGE_ID) && getIntent().hasExtra(Extras.MESSAGE_TYPE)){
+            String message = getIntent().getStringExtra(Extras.MESSAGE);
+            String messageId = getIntent().getStringExtra(Extras.MESSAGE_ID);
+            String messageType = getIntent().getStringExtra(Extras.MESSAGE_TYPE);
+
+            DatabaseReference messageRef = mRootRef.child(NodeNames.MESSAGES).child(currentUserId).child(chatUserId).push();
+            String newMessageId = messageRef.getKey();
+
+            if(messageType.equals(Constants.MESSAGE_TYPE_TEXT)) {
+                sendMessage(message, messageType, newMessageId);
+            }
+            else{
+                StorageReference rootRef = FirebaseStorage.getInstance().getReference();
+                String folder = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?Constants.MESSAGE_VIDEOS:Constants.MESSAGE_IMAGES;
+                String oldFilename = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?messageId+".mp4":messageId+".jpg";
+                String newFilename = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?newMessageId+".mp4":newMessageId+".jpg";
+
+                String localFilePath = getExternalFilesDir(null).getAbsolutePath() + "/" + oldFilename;
+                File localFile = new File(localFilePath);
+
+                StorageReference newFileref = rootRef.child(folder).child(newFilename);
+
+                rootRef.child(folder).child(oldFilename).getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                        UploadTask uploadTask = newFileref.putFile(Uri.fromFile(localFile));
+                        uploadProgress(uploadTask, newFileref, newMessageId, messageType);
+                    }
+                });
+
+            }
+        }
     }
 
     private void sendMessage(String msg, String msgType, String pushId){
@@ -203,7 +283,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
             @Override
             public void onChildRemoved(@NonNull @NotNull DataSnapshot snapshot) {
-
+                loadMessages();
             }
 
             @Override
@@ -291,6 +371,19 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
             else if(requestCode == REQUEST_CODE_PICK_VIDEO){
                 Uri uri = data.getData();
                 uploadFile(uri, Constants.MESSAGE_TYPE_VIDEO);
+            }
+            else if(requestCode == REQUEST_CODE_FORWARD_MSG){
+                Intent intent = new Intent(this, ChatActivity.class);
+                intent.putExtra(Extras.USER_KEY, data.getStringExtra(Extras.USER_KEY));
+                intent.putExtra(Extras.USER_NAME, data.getStringExtra(Extras.USER_NAME));
+                intent.putExtra(Extras.PHOTO_NAME, data.getStringExtra(Extras.PHOTO_NAME));
+
+                intent.putExtra(Extras.MESSAGE, data.getStringExtra(Extras.MESSAGE));
+                intent.putExtra(Extras.MESSAGE_ID, data.getStringExtra(Extras.MESSAGE_ID));
+                intent.putExtra(Extras.MESSAGE_TYPE, data.getStringExtra(Extras.MESSAGE_TYPE));
+
+                startActivity(intent);
+                finish();
             }
         }
     }
@@ -403,5 +496,194 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
                 Toast.makeText(this, R.string.permission_required_to_access,Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int itemId = item.getItemId();
+        switch (itemId){
+            case android.R.id.home:
+                finish();
+                break;
+
+            default:
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    public void deleteMessage(String messageId, String messageType){
+        DatabaseReference databaseReference = mRootRef.child(NodeNames.MESSAGES)
+                .child(currentUserId).child(chatUserId).child(messageId);
+        databaseReference.removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull @NotNull Task<Void> task) {
+                if(task.isSuccessful()){
+                    DatabaseReference databaseReference1 = mRootRef.child(NodeNames.MESSAGES)
+                            .child(chatUserId).child(currentUserId).child(messageId);
+                    databaseReference1.removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull @NotNull Task<Void> task) {
+                            if(task.isSuccessful()){
+                                Toast.makeText(ChatActivity.this,
+                                        R.string.message_deleted_succesfully,
+                                        Toast.LENGTH_SHORT).show();
+                                if(!messageType.equals(Constants.MESSAGE_TYPE_TEXT)){
+                                    StorageReference rootRef = FirebaseStorage.getInstance().getReference();
+                                    String folder = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?Constants.MESSAGE_VIDEOS:Constants.MESSAGE_IMAGES;
+                                    String fileName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?messageId + ".mp4" : messageId + ".jpg";
+                                    StorageReference fileRef = rootRef.child(folder).child(fileName);
+
+                                    fileRef.delete().addOnCompleteListener(new OnCompleteListener<Void>() {
+                                        @Override
+                                        public void onComplete(@NonNull @NotNull Task<Void> task) {
+                                            if(!task.isSuccessful()){
+                                                Toast.makeText(ChatActivity.this,
+                                                        getString(R.string.falied_to_delete_file, task.getException()),
+                                                        Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                            else{
+                                Toast.makeText(ChatActivity.this,
+                                        getString(R.string.falied_to_delete_message, task.getException()),
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    });
+                }
+                else{
+                    Toast.makeText(ChatActivity.this,
+                            getString(R.string.falied_to_delete_message, task.getException()),
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    public void downloadFile(String messageId, String messageType, boolean isShare){
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)==PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
+        }
+        else{
+            String folderName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?Constants.MESSAGE_VIDEOS:Constants.MESSAGE_IMAGES;
+            String fileName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?messageId + "mp4" : messageId + ".jpg";
+
+            StorageReference fileRef = FirebaseStorage.getInstance().getReference().child(folderName).child(fileName);
+            String localFilePath = getExternalFilesDir(null).getAbsolutePath() + "/" + fileName;
+
+            File localFile = new File(localFilePath);
+            try{
+                if(localFile.exists() || localFile.createNewFile()){
+                    FileDownloadTask downloadTask = fileRef.getFile(localFile);
+
+                    View view = getLayoutInflater().inflate(R.layout.file_progress, null);
+                    ProgressBar pbProgress = view.findViewById(R.id.pbProgress);
+                    TextView tvProgress = view.findViewById(R.id.tvFileProgress);
+                    ImageView ivPlay = view.findViewById(R.id.ivPlay);
+                    ImageView ivPause = view.findViewById(R.id.ivPause);
+                    ImageView ivCancel = view.findViewById(R.id.ivCancel);
+
+                    ivPause.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            downloadTask.pause();
+                            ivPlay.setVisibility(View.VISIBLE);
+                            ivPause.setVisibility(View.GONE);
+                        }
+                    });
+
+                    ivPlay.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            downloadTask.resume();
+                            ivPlay.setVisibility(View.GONE);
+                            ivPause.setVisibility(View.VISIBLE);
+                        }
+                    });
+
+                    ivCancel.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            downloadTask.cancel();
+                        }
+                    });
+
+                    llProgress.addView(view);
+                    tvProgress.setText(getString(R.string.download_progress, messageType, "0"));
+
+                    downloadTask.addOnProgressListener(new OnProgressListener<FileDownloadTask.TaskSnapshot>() {
+                        @Override
+                        public void onProgress(@NonNull @NotNull FileDownloadTask.TaskSnapshot snapshot) {
+                            double progress = (100.0 * snapshot.getBytesTransferred())/snapshot.getTotalByteCount();
+                            pbProgress.setProgress((int)progress);
+                            tvProgress.setText(getString(R.string.download_progress, messageType, String.valueOf(progress)));
+                        }
+                    });
+
+                    downloadTask.addOnCompleteListener(new OnCompleteListener<FileDownloadTask.TaskSnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull @NotNull Task<FileDownloadTask.TaskSnapshot> task) {
+                            llProgress.removeView(view);
+                            if(task.isSuccessful()){
+                                if(isShare){
+                                    Intent intentShare = new Intent();
+                                    intentShare.setAction(Intent.ACTION_SEND);
+                                    intentShare.putExtra(Intent.EXTRA_STREAM, Uri.parse(localFilePath));
+                                    if (messageType.equals(Constants.MESSAGE_TYPE_VIDEO))
+                                        intentShare.setType("video/mp4");
+                                    else if (messageType.equals(Constants.MESSAGE_TYPE_IMAGE)) {
+                                        intentShare.setType("image/jpg");
+                                    }
+                                    startActivity(Intent.createChooser(intentShare, getString(R.string.share_with)));
+                                }
+                                else {
+                                    Snackbar snackbar = Snackbar.make(llProgress, getString(R.string.file_downloaded_succesfully)
+                                            , Snackbar.LENGTH_INDEFINITE);
+                                    snackbar.setAction(R.string.view, new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            Uri uri = Uri.parse(localFilePath);
+                                            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                                            if (messageType.equals(Constants.MESSAGE_TYPE_VIDEO))
+                                                intent.setDataAndType(uri, "video/mp4");
+                                            else if (messageType.equals(Constants.MESSAGE_TYPE_IMAGE)) {
+                                                intent.setDataAndType(uri, "image/jpg");
+                                            }
+                                        }
+                                    });
+                                    snackbar.show();
+                                }
+                            }
+                        }
+                    });
+
+                    downloadTask.addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull @NotNull Exception e) {
+                            llProgress.removeView(view);
+                            Toast.makeText(ChatActivity.this, getString(R.string.failed_to_download, e.getMessage()), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                }
+                else{
+                    Toast.makeText(this, R.string.falied_to_store_file, Toast.LENGTH_SHORT).show();
+                }
+            }
+            catch (Exception ex){
+                Toast.makeText(ChatActivity.this, getString(R.string.failed_to_download, ex.getMessage()), Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    public void forwardMessage(String selectedMessageId, String selectedMessage, String selectedMessageType) {
+        Intent intent = new Intent(this, SelectFriendActivity.class);
+        intent.putExtra(Extras.MESSAGE, selectedMessage);
+        intent.putExtra(Extras.MESSAGE_ID, selectedMessageId);
+        intent.putExtra(Extras.MESSAGE_TYPE, selectedMessageType);
+        startActivityForResult(intent, REQUEST_CODE_FORWARD_MSG);
     }
 }

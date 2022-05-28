@@ -7,4 +7,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="red">#e91e63</color>
     <color name="linkColor">#1C38CF</color>
+    <color name="chat_background">#ededed</color>
 </resources>
