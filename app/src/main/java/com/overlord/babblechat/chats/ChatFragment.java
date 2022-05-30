@@ -46,6 +46,8 @@ public class ChatFragment extends Fragment {
     private ChildEventListener childEventListener;
     private Query query;
 
+    private  List<String> userIds;
+
     public ChatFragment() {
         // Required empty public constructor
     }
@@ -89,7 +91,7 @@ public class ChatFragment extends Fragment {
 
             @Override
             public void onChildChanged(@NonNull @NotNull DataSnapshot snapshot, @Nullable @org.jetbrains.annotations.Nullable String previousChildName) {
-
+                updateList(snapshot, false, snapshot.getKey());
             }
 
             @Override
@@ -120,9 +122,18 @@ public class ChatFragment extends Fragment {
         tvEmptyChatList.setVisibility(View.GONE);
         String lastMessage, lastMessageTime, unreadCount;
 
-        lastMessage = "";
-        lastMessageTime = "";
-        unreadCount = "";
+        if(dataSnapshot.child(NodeNames.LAST_MESSAGE).getValue()!=null)
+            lastMessage = dataSnapshot.child(NodeNames.LAST_MESSAGE).getValue().toString();
+        else
+            lastMessage = "";
+
+        if(dataSnapshot.child(NodeNames.LAST_MESSAGE_TIME).getValue()!=null)
+            lastMessageTime = dataSnapshot.child(NodeNames.LAST_MESSAGE_TIME).getValue().toString();
+        else
+            lastMessageTime="";
+
+        unreadCount=dataSnapshot.child(NodeNames.UNREAD_COUNT).getValue()==null?
+                "0":dataSnapshot.child(NodeNames.UNREAD_COUNT).getValue().toString();
 
         databaseReferenceUsers.child(userId).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -135,7 +146,14 @@ public class ChatFragment extends Fragment {
 
                 ChatListModel chatListModel = new ChatListModel(userId, fullName, photoName, unreadCount, lastMessage, lastMessageTime);
 
-                chatListModelList.add(chatListModel);
+                if(isNew) {
+                    chatListModelList.add(chatListModel);
+                    userIds.add(userId);
+                }
+                else {
+                    int indexOfClickedUser = userIds.indexOf(userId) ;
+                    chatListModelList.set(indexOfClickedUser, chatListModel);
+                }
                 chatListAdapter.notifyDataSetChanged();
             }
 

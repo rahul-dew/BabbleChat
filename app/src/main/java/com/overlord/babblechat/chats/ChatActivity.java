@@ -178,6 +178,8 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
         loadMessages();
 
+        mRootRef.child(NodeNames.CHATS).child(currentUserId).child(chatUserId).child(NodeNames.UNREAD_COUNT).setValue(0);
+
         rvMessages.scrollToPosition(messagesList.size() - 1);
 
         srlMessages.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -229,8 +231,80 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
             }
 
         }
-    }
 
+        DatabaseReference databaseReferenceUsers = mRootRef.child(NodeNames.USERS).child(chatUserId);
+        databaseReferenceUsers.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                String status="";
+                if(dataSnapshot.child(NodeNames.ONLINE).getValue()!=null)
+                    status = dataSnapshot.child(NodeNames.ONLINE).getValue().toString();
+
+                if(status.equals("true"))
+                    tvUserStatus.setText(Constants.STATUS_ONLINE);
+                else
+                    tvUserStatus.setText(Constants.STATUS_OFFLINE);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+
+        etMessage.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+                DatabaseReference currentUserRef = mRootRef.child(NodeNames.CHATS).child(currentUserId).child(chatUserId);
+                if(editable.toString().matches(""))
+                {
+                    currentUserRef.child(NodeNames.TYPING).setValue(Constants.TYPING_STOPPED);
+                }
+                else
+                {
+                    currentUserRef.child(NodeNames.TYPING).setValue(Constants.TYPING_STARTED);
+                }
+
+            }
+        });
+
+
+        DatabaseReference chatUserRef = mRootRef.child(NodeNames.CHATS).child(chatUserId).child(currentUserId);
+        chatUserRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if(dataSnapshot.child(NodeNames.TYPING).getValue()!=null)
+                {
+                    String typingStatus = dataSnapshot.child(NodeNames.TYPING).getValue().toString();
+
+                    if(typingStatus.equals(Constants.TYPING_STARTED))
+                        tvUserStatus.setText(Constants.STATUS_TYPING);
+                    else
+                        tvUserStatus.setText(Constants.STATUS_ONLINE);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+
+
+    }
 
     private void sendMessage(final String msg, final String msgType, String pushId) {
         try {
@@ -272,6 +346,8 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
                             Util.sendNotification(ChatActivity.this, title, msg, chatUserId);
 
+                            String lastMessage= !title.equals("New Message")?title:msg;
+                            Util.updateChatDetails(ChatActivity.this, currentUserId, chatUserId, lastMessage);
 
                         }
                     }
@@ -749,6 +825,12 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         intent.putExtra(Extras.MESSAGE_ID, selectedMessageId);
         intent.putExtra(Extras.MESSAGE_TYPE, selectedMessageType);
         startActivityForResult(intent , REQUEST_CODE_FORWARD_MESSAGE);
+    }
+
+    @Override
+    public void onBackPressed() {
+        mRootRef.child(NodeNames.CHATS).child(currentUserId).child(chatUserId).child(NodeNames.UNREAD_COUNT).setValue(0);
+        super.onBackPressed();
     }
 }
 

@@ -14,7 +14,11 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.google.android.material.tabs.TabLayout;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.overlord.babblechat.chats.ChatFragment;
+import com.overlord.babblechat.common.NodeNames;
 import com.overlord.babblechat.findFriends.FindFriendFragment;
 import com.overlord.babblechat.profile.ProfileActivity;
 import com.overlord.babblechat.requests.RequestsFragment;
@@ -33,6 +37,13 @@ public class MainActivity extends AppCompatActivity {
 
         tabLayout = findViewById(R.id.tabMain);
         viewPager = findViewById(R.id.vpMain);
+
+        FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
+        DatabaseReference databaseReferenceUsers = FirebaseDatabase.getInstance().getReference()
+                .child(NodeNames.USERS).child(firebaseAuth.getCurrentUser().getUid());
+
+        databaseReferenceUsers.child(NodeNames.ONLINE).setValue(true);
+        databaseReferenceUsers.child(NodeNames.ONLINE).onDisconnect().setValue(false);
 
         setViewPager();
     }
