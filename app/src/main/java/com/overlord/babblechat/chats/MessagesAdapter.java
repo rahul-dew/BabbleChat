@@ -227,10 +227,35 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
             switch (itemId)
             {
                 case  R.id.mnuDelete:
+                    if(context instanceof  ChatActivity)
+                    {
+                        ((ChatActivity)context).deleteMessage(selectedMessageId, selectedMessageType);
+                    }
+                    actionMode.finish();
                     break;
                 case  R.id.mnuDownload:
+                    if(context instanceof  ChatActivity)
+                    {
+                        ((ChatActivity)context).downloadFile(selectedMessageId, selectedMessageType, false);
+                    }
+                    actionMode.finish();
                     break;
                 case  R.id.mnuShare:
+                    if(selectedMessageType.equals(Constants.MESSAGE_TYPE_TEXT)){
+                        Intent intentShare = new Intent();
+                        intentShare.setAction(Intent.ACTION_SEND);
+                        intentShare.putExtra(Intent.EXTRA_TEXT, selectedMessage);
+                        intentShare.setType("text/plain");
+                        context.startActivity(intentShare);
+                    }
+                    else
+                    {
+                        if(context instanceof  ChatActivity)
+                        {
+                            ((ChatActivity)context).downloadFile(selectedMessageId, selectedMessageType, true);
+                        }
+                    }
+                    actionMode.finish();
                     break;
                 case  R.id.mnuForward:
             }
@@ -240,7 +265,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
         @Override
         public void onDestroyActionMode(ActionMode actionMode) {
             actionMode =null;
-            selectedView.setBackgroundColor(context.getResources().getColor(R.color.white));
+            selectedView.setBackgroundColor(context.getResources().getColor(R.color.chat_background));
         }
     };
 

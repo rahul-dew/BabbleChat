@@ -66,4 +66,14 @@
     <string name="delete">Delete</string>
     <string name="share">Share</string>
     <string name="download">Download</string>
+    <string name="message_deleted_successfully">Message deleted successfully</string>
+    <string name="failed_to_delete_file">Failed to delete file %1$ss</string>
+    <string name="failed_to_delete_message">Failed to delete message : %1$s</string>
+    <string name="download_progress">Downloading %1$s (%2$s %%)</string>
+    <string name="share_with">Share with...</string>
+    <string name="file_downloaded_successfully">File downloaded Successfully</string>
+    <string name="view">View</string>
+    <string name="failed_to_download">Failed to download : %1$ss</string>
+    <string name="failed_to_store_file">Failed to store file</string>
+    <string name="failed_to_fetch_friend_list">Failed to fetch friend list : %1$s</string>
 </resources>

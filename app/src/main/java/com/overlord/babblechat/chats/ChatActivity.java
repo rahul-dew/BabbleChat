@@ -17,7 +17,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,6 +34,7 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -43,6 +43,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ServerValue;
+import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
@@ -52,15 +53,16 @@ import com.overlord.babblechat.common.Constants;
 import com.overlord.babblechat.common.Extras;
 import com.overlord.babblechat.common.NodeNames;
 import com.overlord.babblechat.common.Util;
+import com.overlord.babblechat.selectFriend.SelectFriendActivity;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static android.content.Intent.ACTION_PICK;
 import static android.provider.MediaStore.ACTION_IMAGE_CAPTURE;
 
 public class ChatActivity extends AppCompatActivity implements View.OnClickListener{
@@ -83,6 +85,8 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     private static final int REQUEST_CODE_PICK_IMAGE=101;
     private static final int REQUEST_CODE_PICK_VIDEO=103;
     private static final int REQUEST_CODE_CAPTURE_IMAGE=102;
+
+    private static final int REQUEST_CODE_FORWARD_MESSAGE = 104;
 
 
     private DatabaseReference databaseReferenceMessages;
@@ -463,4 +467,198 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         }
         return super.onOptionsItemSelected(item);
     }
+
+    public void deleteMessage(final String messageId, final String messageType){
+
+        DatabaseReference databaseReference = mRootRef.child(NodeNames.MESSAGES)
+                .child(currentUserId).child(chatUserId).child(messageId);
+
+        databaseReference.removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+
+                if(task.isSuccessful())
+                {
+                    DatabaseReference databaseReferenceChatUser = mRootRef.child(NodeNames.MESSAGES)
+                            .child(chatUserId).child(currentUserId).child(messageId);
+
+                    databaseReferenceChatUser.removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+
+                            if(task.isSuccessful())
+                            {
+                                Toast.makeText(ChatActivity.this, R.string.message_deleted_successfully, Toast.LENGTH_SHORT).show();
+                                if(!messageType.equals(Constants.MESSAGE_TYPE_TEXT))
+                                {
+                                    StorageReference rootRef = FirebaseStorage.getInstance().getReference();
+                                    String folder = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?Constants.MESSAGE_VIDEOS:Constants.MESSAGE_IMAGES;
+                                    String fileName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?messageId +".mp4": messageId+".jpg";
+                                    StorageReference fileRef = rootRef.child(folder).child(fileName);
+
+                                    fileRef.delete().addOnCompleteListener(new OnCompleteListener<Void>() {
+                                        @Override
+                                        public void onComplete(@NonNull Task<Void> task) {
+                                            if(!task.isSuccessful())
+                                            {
+                                                Toast.makeText(ChatActivity.this,
+                                                        getString(R.string.failed_to_delete_file, task.getException()), Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                            else
+                            {
+                                Toast.makeText(ChatActivity.this, getString( R.string.failed_to_delete_message, task.getException()),
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    });
+                }
+                else
+                {
+                    Toast.makeText(ChatActivity.this, getString( R.string.failed_to_delete_message, task.getException()),
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+    }
+
+    public  void  downloadFile(String messageId, final String messageType, final boolean isShare){
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)==PackageManager.PERMISSION_DENIED)
+        {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);
+        }
+        else
+        {
+            String folderName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?Constants.MESSAGE_VIDEOS : Constants.MESSAGE_IMAGES;
+            String fileName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?messageId + ".mp4": messageId + ".jpg";
+
+            StorageReference fileRef= FirebaseStorage.getInstance().getReference().child(folderName).child(fileName);
+            final String localFilePath = getExternalFilesDir(null).getAbsolutePath() + "/" + fileName;
+
+            File localFile = new File(localFilePath);
+
+            try {
+                if(localFile.exists() || localFile.createNewFile())
+                {
+                    final FileDownloadTask downloadTask =  fileRef.getFile(localFile);
+
+                    final View view = getLayoutInflater().inflate(R.layout.file_progress, null);
+                    final ProgressBar pbProgress = view.findViewById(R.id.pbProgress);
+                    final TextView tvProgress = view.findViewById(R.id.tvFileProgress);
+                    final ImageView ivPlay = view.findViewById(R.id.ivPlay);
+                    final ImageView ivPause = view.findViewById(R.id.ivPause);
+                    ImageView ivCancel = view.findViewById(R.id.ivCancel);
+
+                    ivPause.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            downloadTask.pause();
+                            ivPlay.setVisibility(View.VISIBLE);
+                            ivPause.setVisibility(View.GONE);
+                        }
+                    });
+
+                    ivPlay.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            downloadTask.resume();
+                            ivPause.setVisibility(View.VISIBLE);
+                            ivPlay.setVisibility(View.GONE);
+                        }
+                    });
+
+                    ivCancel.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            downloadTask.cancel();
+                        }
+                    });
+
+                    llProgress.addView(view);
+                    tvProgress.setText(getString(R.string.download_progress, messageType, "0"));
+
+                    downloadTask.addOnProgressListener(new OnProgressListener<FileDownloadTask.TaskSnapshot>() {
+                        @Override
+                        public void onProgress(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                            double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+
+                            pbProgress.setProgress((int) progress);
+                            tvProgress.setText(getString(R.string.download_progress, messageType, String.valueOf(pbProgress.getProgress())));
+                        }
+                    });
+
+                    downloadTask.addOnCompleteListener(new OnCompleteListener<FileDownloadTask.TaskSnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull Task<FileDownloadTask.TaskSnapshot> task) {
+                            llProgress.removeView(view);
+                            if (task.isSuccessful()) {
+
+                                if(isShare){
+                                    Intent intentShare = new Intent();
+                                    intentShare.setAction(Intent.ACTION_SEND);
+                                    intentShare.putExtra(Intent.EXTRA_STREAM, Uri.parse(localFilePath));
+                                    if(messageType.equals(Constants.MESSAGE_TYPE_VIDEO))
+                                        intentShare.setType("video/mp4");
+                                    if(messageType.equals(Constants.MESSAGE_TYPE_IMAGE))
+                                        intentShare.setType("image/jpg");
+                                    startActivity(Intent.createChooser(intentShare, getString(R.string.share_with)));
+
+                                }
+                                else {
+                                    Snackbar snackbar = Snackbar.make(llProgress, getString(R.string.file_downloaded_successfully)
+                                            , Snackbar.LENGTH_INDEFINITE);
+
+                                    snackbar.setAction(R.string.view, new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            Uri uri = Uri.parse(localFilePath);
+                                            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                                            if (messageType.equals(Constants.MESSAGE_TYPE_VIDEO))
+                                                intent.setDataAndType(uri, "video/mp4");
+                                            else if (messageType.equals(Constants.MESSAGE_TYPE_IMAGE))
+                                                intent.setDataAndType(uri, "image/jpg");
+
+                                            startActivity(intent);
+                                        }
+                                    });
+                                    snackbar.show();
+                                }
+
+                            }
+                        }
+                    });
+
+                    downloadTask.addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            llProgress.removeView(view);
+                            Toast.makeText(ChatActivity.this, getString(R.string.failed_to_download, e.getMessage()), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                }
+                else
+                {
+                    Toast.makeText(this, R.string.failed_to_store_file, Toast.LENGTH_SHORT).show();
+                }
+            }
+            catch(Exception ex){
+                Toast.makeText(ChatActivity.this, getString(R.string.failed_to_download, ex.getMessage()), Toast.LENGTH_SHORT).show();
+            }
+
+        }
+    }
+
+    public void forwardMessage(String selectedMessageId, String selectedMessage, String selectedMessageType) {
+        Intent intent = new Intent(this, SelectFriendActivity.class);
+        intent.putExtra(Extras.MESSAGE, selectedMessage);
+        intent.putExtra(Extras.MESSAGE_ID, selectedMessageId);
+        intent.putExtra(Extras.MESSAGE_TYPE, selectedMessageType);
+        startActivityForResult(intent , REQUEST_CODE_FORWARD_MESSAGE);
+    }
+
 }
