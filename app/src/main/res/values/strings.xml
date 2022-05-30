@@ -76,5 +76,8 @@
     <string name="failed_to_download">Failed to download : %1$ss</string>
     <string name="failed_to_store_file">Failed to store file</string>
     <string name="failed_to_fetch_friend_list">Failed to fetch friend list : %1$s</string>
-    <string name="failed_to_send_message">Failed to send message</string>
+    <string name="failed_to_send_message">Failed to send message : %1$s</string>
+    <string name="failed_to_save_device_token">Failed to save device token</string>
+    <string name="failed_to_send_notification">Failed to send notification : %1$s</string>
+    <string name="request_denied_successfully">Request denied succesfully</string>
 </resources>

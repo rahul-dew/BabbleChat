@@ -14,12 +14,15 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.overlord.babblechat.MainActivity;
 import com.overlord.babblechat.MessageActivity;
 import com.overlord.babblechat.R;
 import com.overlord.babblechat.common.Util;
 import com.overlord.babblechat.password.ResetPasswordActivity;
 import com.overlord.babblechat.signup.SignupActivity;
+
+import org.jetbrains.annotations.NotNull;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -89,6 +92,17 @@ public class LoginActivity extends AppCompatActivity {
         FirebaseUser firebaseUser = firebaseAuth.getCurrentUser();
 
         if (firebaseUser != null){
+            final String[] token = {""};
+            FirebaseMessaging.getInstance().getToken().addOnCompleteListener(new OnCompleteListener<String>() {
+                @Override
+                public void onComplete(@NonNull @NotNull Task<String> task) {
+                    if(task.isSuccessful()){
+                        token[0] = task.getResult();
+                        Util.updateDeviceToken(LoginActivity.this, token[0]);
+                    }
+                }
+            });
+
             startActivity(new Intent(LoginActivity.this, MainActivity.class));
             finish();
         }

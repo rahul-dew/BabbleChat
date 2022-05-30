@@ -5,6 +5,7 @@ public class NodeNames {
     public static final String FRIEND_REQUESTS = "friendRequests";
     public static final String CHATS = "chats";
     public static final String MESSAGES = "messages";
+    public static final String TOKENS = "tokens";
 
     public static final String NAME = "name";
     public static final String EMAIL = "email";
@@ -20,4 +21,12 @@ public class NodeNames {
     public static final String MESSAGE_TYPE = "messageType";
     public static final String MESSAGE_FROM = "messageFrom";
     public static final String MESSAGE_TIME = "messageTime";
+
+    public static final String DEVICE_TOKEN ="device_token" ;
+
+    public static final String UNREAD_COUNT = "unread_count";
+    public static final String LAST_MESSAGE = "last_message";
+    public static final String LAST_MESSAGE_TIME = "last_message_time";
+
+    public static final String TYPING = "typing" ;
 }

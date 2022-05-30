@@ -25,6 +25,7 @@ import com.google.firebase.storage.StorageReference;
 import com.overlord.babblechat.R;
 import com.overlord.babblechat.common.Constants;
 import com.overlord.babblechat.common.NodeNames;
+import com.overlord.babblechat.common.Util;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -99,6 +100,10 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
                                                         @Override
                                                         public void onComplete(@NonNull @NotNull Task<Void> task) {
                                                             if(task.isSuccessful()){
+                                                                String title = "Friend Request Accepted";
+                                                                String message= "Friend request accepted by " + currentUser.getDisplayName();
+                                                                Util.sendNotification(context, title, message, userId);
+
                                                                 holder.pbDecision.setVisibility(View.GONE);
                                                                 holder.btnAcceptRequest.setVisibility(View.VISIBLE);
                                                                 holder.btnDenyRequest.setVisibility(View.VISIBLE);
@@ -147,7 +152,16 @@ public class RequestAdapter extends RecyclerView.Adapter<RequestAdapter.RequestV
                                 @Override
                                 public void onComplete(@NonNull @NotNull Task<Void> task) {
                                     if(task.isSuccessful()){
+                                        Toast.makeText(context, R.string.request_denied_successfully, Toast.LENGTH_SHORT).show();
+
+                                        String title = "Friend Request Denied";
+                                        String message= "Friend request denied by " + currentUser.getDisplayName();
+                                        Util.sendNotification(context, title, message, userId);
+
+
                                         holder.pbDecision.setVisibility(View.GONE);
+                                        holder.btnDenyRequest.setVisibility(View.VISIBLE);
+                                        holder.btnAcceptRequest.setVisibility(View.VISIBLE);
                                     }
                                     else{
                                         Toast.makeText(context, context.getString(R.string.failed_to_deny_request, task.getException()) , Toast.LENGTH_SHORT).show();

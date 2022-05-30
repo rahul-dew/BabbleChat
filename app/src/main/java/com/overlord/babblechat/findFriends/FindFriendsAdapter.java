@@ -24,6 +24,7 @@ import com.google.firebase.storage.StorageReference;
 import com.overlord.babblechat.R;
 import com.overlord.babblechat.common.Constants;
 import com.overlord.babblechat.common.NodeNames;
+import com.overlord.babblechat.common.Util;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -104,6 +105,11 @@ public class FindFriendsAdapter extends RecyclerView.Adapter<FindFriendsAdapter.
                                 public void onComplete(@NonNull @NotNull Task<Void> task) {
                                     if(task.isSuccessful()){
                                         Toast.makeText(context, request_sent_successful, Toast.LENGTH_SHORT).show();
+
+                                        String title = "New Friend Request";
+                                        String message= "Friend request from " + currentUser.getDisplayName();
+                                        Util.sendNotification(context, title, message, userID);
+
                                         holder.pbRequest.setVisibility(View.GONE);
                                         holder.btCancelRequest.setVisibility(View.VISIBLE);
                                     }
