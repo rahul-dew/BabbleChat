@@ -131,14 +131,3 @@ public class SelectFriendActivity extends AppCompatActivity {
     }
 
 }
-
-
-
-
-
-
-
-
-
-
-

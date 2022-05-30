@@ -3,8 +3,8 @@ package com.overlord.babblechat.chats;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.provider.ContactsContract;
-import android.util.Log;
+//import android.view.ActionMode;
+import androidx.appcompat.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
@@ -28,7 +29,6 @@ import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.view.ActionMode;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -151,7 +151,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
 
                 actionMode = ((AppCompatActivity)context).startSupportActionMode(actionModeCallBack);
 
-                holder.clMessage.setBackgroundColor(context.getResources().getColor(R.color.icon_green));
+                holder.clMessage.setBackgroundColor(context.getResources().getColor(R.color.dark_grey));
 
                 return  true;
             }
@@ -227,6 +227,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
             switch (itemId)
             {
                 case  R.id.mnuDelete:
+
                     if(context instanceof  ChatActivity)
                     {
                         ((ChatActivity)context).deleteMessage(selectedMessageId, selectedMessageType);
@@ -258,6 +259,14 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
                     actionMode.finish();
                     break;
                 case  R.id.mnuForward:
+
+                    if(context instanceof  ChatActivity)
+                    {
+                        ((ChatActivity) context).forwardMessage(selectedMessageId, selectedMessage, selectedMessageType);
+                    }
+
+                    actionMode.finish();
+                    break;
             }
             return false;
         }
@@ -266,6 +275,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
         public void onDestroyActionMode(ActionMode actionMode) {
             actionMode =null;
             selectedView.setBackgroundColor(context.getResources().getColor(R.color.chat_background));
+
         }
     };
 

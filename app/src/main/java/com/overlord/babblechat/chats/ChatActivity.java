@@ -16,7 +16,9 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,6 +45,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ServerValue;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
@@ -55,20 +58,20 @@ import com.overlord.babblechat.common.NodeNames;
 import com.overlord.babblechat.common.Util;
 import com.overlord.babblechat.selectFriend.SelectFriendActivity;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import static android.provider.MediaStore.ACTION_IMAGE_CAPTURE;
 
-public class ChatActivity extends AppCompatActivity implements View.OnClickListener{
+public class ChatActivity extends AppCompatActivity implements View.OnClickListener {
 
     private ImageView ivSend, ivAttachment, ivProfile;
     private TextView tvUserName, tvUserStatus;
+
     private EditText etMessage;
     private DatabaseReference mRootRef;
     private FirebaseAuth firebaseAuth;
@@ -82,9 +85,9 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     private int currentPage = 1;
     private static final int RECORD_PER_PAGE = 30;
 
-    private static final int REQUEST_CODE_PICK_IMAGE=101;
-    private static final int REQUEST_CODE_PICK_VIDEO=103;
-    private static final int REQUEST_CODE_CAPTURE_IMAGE=102;
+    private static final int REQUEST_CODE_PICK_IMAGE = 101;
+    private static final int REQUEST_CODE_PICK_VIDEO = 103;
+    private static final int REQUEST_CODE_CAPTURE_IMAGE = 102;
 
     private static final int REQUEST_CODE_FORWARD_MESSAGE = 104;
 
@@ -96,7 +99,6 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
     private LinearLayout llProgress;
     private String userName, photoName;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -116,8 +118,12 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
             actionBar.setDisplayOptions(actionBar.getDisplayOptions() | ActionBar.DISPLAY_SHOW_CUSTOM);
         }
 
+
         ivProfile = findViewById(R.id.ivProfile);
         tvUserName = findViewById(R.id.tvUserName);
+
+        tvUserStatus = findViewById(R.id.tvUserStatus);
+
         ivSend = findViewById(R.id.ivSend);
         ivAttachment = findViewById(R.id.ivAttachment);
         etMessage = findViewById(R.id.etMessage);
@@ -131,17 +137,20 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         mRootRef = FirebaseDatabase.getInstance().getReference();
         currentUserId = firebaseAuth.getCurrentUser().getUid();
 
-        if(getIntent().hasExtra(Extras.USER_KEY)){
+        if (getIntent().hasExtra(Extras.USER_KEY)) {
             chatUserId = getIntent().getStringExtra(Extras.USER_KEY);
+            photoName = chatUserId + ".jpg";
         }
         if (getIntent().hasExtra(Extras.USER_NAME))
             userName = getIntent().getStringExtra(Extras.USER_NAME);
 
-        if (getIntent().hasExtra(Extras.PHOTO_NAME))
-            photoName = getIntent().getStringExtra(Extras.PHOTO_NAME);
+        //if (getIntent().hasExtra(Extras.PHOTO_NAME))
+        //getIntent().getStringExtra(Extras.PHOTO_NAME);
 
 
         tvUserName.setText(userName);
+
+
         if(!TextUtils.isEmpty(photoName) && photoName!=null) {
             StorageReference photoRef = FirebaseStorage.getInstance().getReference().child(Constants.IMAGES_FOLDER + "/" + photoName);
 
@@ -157,6 +166,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
             });
         }
 
+
         rvMessages = findViewById(R.id.rvMessages);
         srlMessages = findViewById(R.id.srlMessages);
 
@@ -167,7 +177,8 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         rvMessages.setAdapter(messagesAdapter);
 
         loadMessages();
-        rvMessages.scrollToPosition(messagesList.size()-1);
+
+        rvMessages.scrollToPosition(messagesList.size() - 1);
 
         srlMessages.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
@@ -185,11 +196,46 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         view.findViewById(R.id.ivClose).setOnClickListener(this);
         bottomSheetDialog.setContentView(view);
 
+        if(getIntent().hasExtra(Extras.MESSAGE) && getIntent().hasExtra(Extras.MESSAGE_ID) && getIntent().hasExtra(Extras.MESSAGE_TYPE) )
+        {
+            String message = getIntent().getStringExtra(Extras.MESSAGE);
+            String messageId = getIntent().getStringExtra(Extras.MESSAGE_ID);
+            final String messageType = getIntent().getStringExtra(Extras.MESSAGE_TYPE);
+
+            DatabaseReference messageRef = mRootRef.child(NodeNames.MESSAGES).child(currentUserId).child(chatUserId).push();
+            final String newMessageId = messageRef.getKey();
+
+            if(messageType.equals(Constants.MESSAGE_TYPE_TEXT)) {
+                sendMessage(message, messageType, newMessageId);
+            }
+            else{
+                StorageReference rootRef = FirebaseStorage.getInstance().getReference();
+                String folder = messageType.equals( Constants.MESSAGE_TYPE_VIDEO)? Constants.MESSAGE_VIDEOS:Constants.MESSAGE_IMAGES;
+                String oldFileName = messageType.equals( Constants.MESSAGE_TYPE_VIDEO)?messageId + ".mp4": messageId+".jpg";
+                String newFileName = messageType.equals( Constants.MESSAGE_TYPE_VIDEO)?newMessageId + ".mp4": newMessageId+".jpg";
+
+                final String localFilePath = getExternalFilesDir(null).getAbsolutePath() + "/" + oldFileName;
+                final File localFile = new File(localFilePath);
+
+                final StorageReference newFileRef = rootRef.child(folder).child(newFileName);
+                rootRef.child(folder).child(oldFileName).getFile(localFile)
+                        .addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
+                            @Override
+                            public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot) {
+                                UploadTask uploadTask = newFileRef.putFile(Uri.fromFile(localFile));
+                                uploadProgress(uploadTask, newFileRef, newMessageId, messageType);
+                            }
+                        });
+            }
+
+        }
     }
 
-    private void sendMessage(String msg, String msgType, String pushId){
+
+    private void sendMessage(final String msg, final String msgType, String pushId) {
         try {
-            if (!msg.equals("")){
+            if (!msg.equals("")) {
+
                 HashMap messageMap = new HashMap();
                 messageMap.put(NodeNames.MESSAGE_ID, pushId);
                 messageMap.put(NodeNames.MESSAGE, msg);
@@ -200,67 +246,78 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
                 String currentUserRef = NodeNames.MESSAGES + "/" + currentUserId + "/" + chatUserId;
                 String chatUserRef = NodeNames.MESSAGES + "/" + chatUserId + "/" + currentUserId;
 
-
                 HashMap messageUserMap = new HashMap();
                 messageUserMap.put(currentUserRef + "/" + pushId, messageMap);
                 messageUserMap.put(chatUserRef + "/" + pushId, messageMap);
 
-
                 etMessage.setText("");
+
                 mRootRef.updateChildren(messageUserMap, new DatabaseReference.CompletionListener() {
                     @Override
-                    public void onComplete(@Nullable @org.jetbrains.annotations.Nullable DatabaseError error, @NonNull @NotNull DatabaseReference ref) {
-                        if(error != null){
-                            Toast.makeText(ChatActivity.this, getString(R.string.failed_send_message, error.getMessage()), Toast.LENGTH_SHORT).show();
+                    public void onComplete(@Nullable DatabaseError databaseError, @NonNull DatabaseReference databaseReference) {
+                        if (databaseError != null) {
+                            Toast.makeText(ChatActivity.this, getString(R.string.failed_to_send_message, databaseError.getMessage())
+                                    , Toast.LENGTH_SHORT).show();
                         }
-                        else{
+                        {
                             Toast.makeText(ChatActivity.this, R.string.message_sent_successfully, Toast.LENGTH_SHORT).show();
+                            String title="";
+
+                            if(msgType.equals(Constants.MESSAGE_TYPE_TEXT))
+                                title = "New Message";
+                            else if(msgType.equals(Constants.MESSAGE_TYPE_IMAGE))
+                                title = "New Image";
+                            else if(msgType.equals(Constants.MESSAGE_TYPE_VIDEO))
+                                title = "New Video";
+
+
                         }
                     }
                 });
-
             }
-        }
-        catch(Exception ex){
-            Toast.makeText(ChatActivity.this, getString(R.string.failed_send_message, ex.getMessage()), Toast.LENGTH_SHORT).show();
+        } catch (Exception ex) {
+            Toast.makeText(ChatActivity.this, getString(R.string.failed_to_send_message, ex.getMessage())
+                    , Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void loadMessages(){
+    private void loadMessages() {
         messagesList.clear();
         databaseReferenceMessages = mRootRef.child(NodeNames.MESSAGES).child(currentUserId).child(chatUserId);
 
         Query messageQuery = databaseReferenceMessages.limitToLast(currentPage * RECORD_PER_PAGE);
+
         if (childEventListener != null)
             messageQuery.removeEventListener(childEventListener);
 
         childEventListener = new ChildEventListener() {
             @Override
-            public void onChildAdded(@NonNull @NotNull DataSnapshot snapshot, @Nullable @org.jetbrains.annotations.Nullable String previousChildName) {
-                MessageModel message = snapshot.getValue(MessageModel.class);
+            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                MessageModel message = dataSnapshot.getValue(MessageModel.class);
+
                 messagesList.add(message);
                 messagesAdapter.notifyDataSetChanged();
-                rvMessages.scrollToPosition(messagesList.size()-1);
+                rvMessages.scrollToPosition(messagesList.size() - 1);
                 srlMessages.setRefreshing(false);
             }
 
             @Override
-            public void onChildChanged(@NonNull @NotNull DataSnapshot snapshot, @Nullable @org.jetbrains.annotations.Nullable String previousChildName) {
+            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
 
             }
 
             @Override
-            public void onChildRemoved(@NonNull @NotNull DataSnapshot snapshot) {
+            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+                loadMessages();
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
 
             }
 
             @Override
-            public void onChildMoved(@NonNull @NotNull DataSnapshot snapshot, @Nullable @org.jetbrains.annotations.Nullable String previousChildName) {
-
-            }
-
-            @Override
-            public void onCancelled(@NonNull @NotNull DatabaseError error) {
+            public void onCancelled(@NonNull DatabaseError databaseError) {
                 srlMessages.setRefreshing(false);
             }
         };
@@ -268,34 +325,34 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         messageQuery.addChildEventListener(childEventListener);
     }
 
-
-
     @Override
-    public void onClick(View view){
-        switch (view.getId()){
+    public void onClick(View view) {
+
+        switch (view.getId()) {
             case R.id.ivSend:
-                if(Util.connectionAvailable(this)) {
+                if (Util.connectionAvailable(this)) {
                     DatabaseReference userMessagePush = mRootRef.child(NodeNames.MESSAGES).child(currentUserId).child(chatUserId).push();
                     String pushId = userMessagePush.getKey();
                     sendMessage(etMessage.getText().toString().trim(), Constants.MESSAGE_TYPE_TEXT, pushId);
-                }else{
+                } else {
                     Toast.makeText(this, R.string.no_internet, Toast.LENGTH_SHORT).show();
                 }
                 break;
 
             case R.id.ivAttachment:
-                if(ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)== PackageManager.PERMISSION_GRANTED){
-                    if(bottomSheetDialog!=null)
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                    if (bottomSheetDialog != null)
                         bottomSheetDialog.show();
 
-                    InputMethodManager inputMethodManager = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
-                    if(inputMethodManager!=null)
-                        inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(),0);
-                }
-                else{
+
+                } else {
                     ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
                 }
 
+
+                InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                if (inputMethodManager != null)
+                    inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
                 break;
 
             case R.id.llCamera:
@@ -304,78 +361,99 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
                 startActivityForResult(intentCamera, REQUEST_CODE_CAPTURE_IMAGE);
                 break;
 
-            case R.id.llVideo:
-                bottomSheetDialog.dismiss();
-                Intent intentVideo = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(intentVideo, REQUEST_CODE_PICK_VIDEO);
-                break;
-
             case R.id.llGallery:
                 bottomSheetDialog.dismiss();
-                Intent intentImage = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                Intent intentImage = new Intent(Intent.ACTION_PICK,
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                 startActivityForResult(intentImage, REQUEST_CODE_PICK_IMAGE);
                 break;
 
-            case R.id.ivClose:
+            case R.id.llVideo:
                 bottomSheetDialog.dismiss();
+                Intent intentVideo = new Intent(Intent.ACTION_PICK,
+                        MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(intentVideo, REQUEST_CODE_PICK_VIDEO);
                 break;
         }
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable @org.jetbrains.annotations.Nullable Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(resultCode == RESULT_OK){
-            if(requestCode == REQUEST_CODE_CAPTURE_IMAGE){
+
+        if (resultCode == RESULT_OK) {
+            if (requestCode == REQUEST_CODE_CAPTURE_IMAGE)//Camera
+            {
                 Bitmap bitmap = (Bitmap) data.getExtras().get("data");
+
                 ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+
                 uploadBytes(bytes, Constants.MESSAGE_TYPE_IMAGE);
-            }
-            else if(requestCode == REQUEST_CODE_PICK_IMAGE){
+
+            } else if (requestCode == REQUEST_CODE_PICK_IMAGE) { //Gallery
                 Uri uri = data.getData();
                 uploadFile(uri, Constants.MESSAGE_TYPE_IMAGE);
-            }
-            else if(requestCode == REQUEST_CODE_PICK_VIDEO){
+            } else if (requestCode == REQUEST_CODE_PICK_VIDEO)//Video
+            {
                 Uri uri = data.getData();
                 uploadFile(uri, Constants.MESSAGE_TYPE_VIDEO);
             }
+            else  if(requestCode==REQUEST_CODE_FORWARD_MESSAGE){
+
+                Intent intent = new Intent( this, ChatActivity.class);
+                intent.putExtra(Extras.USER_KEY, data.getStringExtra(Extras.USER_KEY));
+                intent.putExtra(Extras.USER_NAME, data.getStringExtra(Extras.USER_NAME));
+                intent.putExtra(Extras.PHOTO_NAME, data.getStringExtra(Extras.PHOTO_NAME));
+
+                intent.putExtra(Extras.MESSAGE, data.getStringExtra(Extras.MESSAGE));
+                intent.putExtra(Extras.MESSAGE_ID, data.getStringExtra(Extras.MESSAGE_ID));
+                intent.putExtra(Extras.MESSAGE_TYPE, data.getStringExtra(Extras.MESSAGE_TYPE));
+
+                startActivity(intent);
+                finish();
+            }
         }
+
     }
 
-
-    private void uploadFile(Uri uri, String messageType){
+    private void uploadFile(Uri uri, String messageType) {
         DatabaseReference databaseReference = mRootRef.child(NodeNames.MESSAGES).child(currentUserId).child(chatUserId).push();
         String pushId = databaseReference.getKey();
 
         StorageReference storageReference = FirebaseStorage.getInstance().getReference();
-        String folderName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?Constants.MESSAGE_VIDEOS:Constants.MESSAGE_IMAGES;
-        String fileName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?pushId + ".mp4" : pushId + ".jpg";
+        String folderName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO) ? Constants.MESSAGE_VIDEOS : Constants.MESSAGE_IMAGES;
+        String fileName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO) ? pushId + ".mp4" : pushId + ".jpg";
 
         StorageReference fileRef = storageReference.child(folderName).child(fileName);
         UploadTask uploadTask = fileRef.putFile(uri);
+
         uploadProgress(uploadTask, fileRef, pushId, messageType);
+
+
     }
 
-    private void uploadBytes(ByteArrayOutputStream bytes, String messageType){
+    private void uploadBytes(ByteArrayOutputStream bytes, String messageType) {
         DatabaseReference databaseReference = mRootRef.child(NodeNames.MESSAGES).child(currentUserId).child(chatUserId).push();
         String pushId = databaseReference.getKey();
 
         StorageReference storageReference = FirebaseStorage.getInstance().getReference();
-        String folderName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?Constants.MESSAGE_VIDEOS:Constants.MESSAGE_IMAGES;
-        String fileName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO)?pushId + ".mp4" : pushId + ".jpg";
+        String folderName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO) ? Constants.MESSAGE_VIDEOS : Constants.MESSAGE_IMAGES;
+        String fileName = messageType.equals(Constants.MESSAGE_TYPE_VIDEO) ? pushId + ".mp4" : pushId + ".jpg";
 
         StorageReference fileRef = storageReference.child(folderName).child(fileName);
         UploadTask uploadTask = fileRef.putBytes(bytes.toByteArray());
         uploadProgress(uploadTask, fileRef, pushId, messageType);
     }
 
-    private void uploadProgress(UploadTask task, StorageReference filePath, String pushId, String messageType){
-        View view = getLayoutInflater().inflate(R.layout.file_progress, null);
-        ProgressBar pbProgress = view.findViewById(R.id.pbProgress);
-        TextView tvProgress = view.findViewById(R.id.tvFileProgress);
-        ImageView ivPlay = view.findViewById(R.id.ivPlay);
-        ImageView ivPause = view.findViewById(R.id.ivPause);
+
+    private void uploadProgress(final UploadTask task, final StorageReference filePath, final String pushId, final String messageType) {
+
+        final View view = getLayoutInflater().inflate(R.layout.file_progress, null);
+        final ProgressBar pbProgress = view.findViewById(R.id.pbProgress);
+        final TextView tvProgress = view.findViewById(R.id.tvFileProgress);
+        final ImageView ivPlay = view.findViewById(R.id.ivPlay);
+        final ImageView ivPause = view.findViewById(R.id.ivPause);
         ImageView ivCancel = view.findViewById(R.id.ivCancel);
 
         ivPause.setOnClickListener(new View.OnClickListener() {
@@ -391,8 +469,8 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onClick(View view) {
                 task.resume();
-                ivPlay.setVisibility(View.GONE);
                 ivPause.setVisibility(View.VISIBLE);
+                ivPlay.setVisibility(View.GONE);
             }
         });
 
@@ -405,25 +483,28 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
         llProgress.addView(view);
         tvProgress.setText(getString(R.string.upload_progress, messageType, "0"));
+
         task.addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
             @Override
-            public void onProgress(@NonNull @NotNull UploadTask.TaskSnapshot snapshot) {
-                double progress = (100.0 * snapshot.getBytesTransferred())/snapshot.getTotalByteCount();
-                pbProgress.setProgress((int)progress);
-                tvProgress.setText(getString(R.string.upload_progress, messageType, String.valueOf(progress)));
+            public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+                double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+
+                pbProgress.setProgress((int) progress);
+                tvProgress.setText(getString(R.string.upload_progress, messageType, String.valueOf(pbProgress.getProgress())));
+
             }
         });
 
         task.addOnCompleteListener(new OnCompleteListener<UploadTask.TaskSnapshot>() {
             @Override
-            public void onComplete(@NonNull @NotNull Task<UploadTask.TaskSnapshot> task) {
+            public void onComplete(@NonNull Task<UploadTask.TaskSnapshot> task) {
                 llProgress.removeView(view);
-                if(task.isSuccessful()){
+                if (task.isSuccessful()) {
                     filePath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                         @Override
                         public void onSuccess(Uri uri) {
-                            String downloadUri = uri.toString();
-                            sendMessage(downloadUri, messageType, pushId);
+                            String downloadUrl = uri.toString();
+                            sendMessage(downloadUrl, messageType, pushId);
                         }
                     });
                 }
@@ -432,24 +513,26 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
         task.addOnFailureListener(new OnFailureListener() {
             @Override
-            public void onFailure(@NonNull @NotNull Exception e) {
+            public void onFailure(@NonNull Exception e) {
                 llProgress.removeView(view);
                 Toast.makeText(ChatActivity.this, getString(R.string.failed_to_upload, e.getMessage()), Toast.LENGTH_SHORT).show();
             }
         });
+
     }
 
+
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull @NotNull String[] permissions, @NonNull @NotNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if(requestCode==1){
-            if(grantResults.length>0 && grantResults[0]==PackageManager.PERMISSION_GRANTED){
-                if(bottomSheetDialog!=null)
+        if (requestCode == 1) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (bottomSheetDialog != null)
                     bottomSheetDialog.show();
+            } else {
+                Toast.makeText(this, "Permission required to access files", Toast.LENGTH_SHORT).show();
             }
-            else{
-                Toast.makeText(this, R.string.permission_required_to_access,Toast.LENGTH_SHORT).show();
-            }
+
         }
     }
 
@@ -523,6 +606,9 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }
         });
+
+
+
 
     }
 
@@ -625,6 +711,8 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
                                             startActivity(intent);
                                         }
                                     });
+
+
                                     snackbar.show();
                                 }
 
@@ -660,5 +748,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         intent.putExtra(Extras.MESSAGE_TYPE, selectedMessageType);
         startActivityForResult(intent , REQUEST_CODE_FORWARD_MESSAGE);
     }
-
 }
+
+
+
