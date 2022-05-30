@@ -120,19 +120,28 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
             @Override
             public void onClick(View view) {
                 String messageType = view.getTag(R.id.TAG_MESSAGE_TYPE).toString();
+<<<<<<< HEAD
                 Uri uri = Uri.parse(view.getTag(R.id.TAG_MESSAGE).toString());
+=======
+                Uri uri = Uri.parse(view.getTag(R.id.TAG_MESSAGE).toString();
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
                 if(messageType.equals(Constants.MESSAGE_TYPE_VIDEO)){
                     Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                     intent.setDataAndType(uri, "video/mp4");
                     context.startActivity(intent);
                 }
+<<<<<<< HEAD
                 else if(messageType.equals(Constants.MESSAGE_TYPE_IMAGE)){
+=======
+                else if(messageType.equals(Constants.MESSAGE_TYPE_IMAGE){
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
                     Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                     intent.setDataAndType(uri, "image/jpg");
                     context.startActivity(intent);
                 }
             }
         });
+<<<<<<< HEAD
 
         holder.clMessage.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
@@ -145,6 +154,8 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
                 return true;
             }
         });
+=======
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
     }
 
     @Override
@@ -177,6 +188,15 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
             tvImageSentTime = itemView.findViewById(R.id.tvSentImageTime);
             tvImageReceivedTime = itemView.findViewById(R.id.tvReceivedImageTime);
 
+<<<<<<< HEAD
+=======
+
+
+
+
+
+
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
             clMessage = itemView.findViewById(R.id.clMessage);
         }
     }

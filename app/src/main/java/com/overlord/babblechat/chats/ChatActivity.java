@@ -16,11 +16,17 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+<<<<<<< HEAD
 import android.text.TextUtils;
+=======
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+<<<<<<< HEAD
 import android.view.ViewGroup;
+=======
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -29,14 +35,20 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+<<<<<<< HEAD
 import com.bumptech.glide.Glide;
 import com.google.android.gms.auth.api.signin.internal.Storage;
+=======
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+<<<<<<< HEAD
 import com.google.android.material.snackbar.Snackbar;
+=======
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -45,7 +57,10 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ServerValue;
+<<<<<<< HEAD
 import com.google.firebase.storage.FileDownloadTask;
+=======
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
@@ -60,7 +75,10 @@ import com.overlord.babblechat.selectFriend.SelectFriendActivity;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
+<<<<<<< HEAD
 import java.io.File;
+=======
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -70,8 +88,12 @@ import static android.provider.MediaStore.ACTION_IMAGE_CAPTURE;
 
 public class ChatActivity extends AppCompatActivity implements View.OnClickListener{
 
+<<<<<<< HEAD
     private ImageView ivSend, ivAttachment, ivProfile;
     private TextView tvUserName;
+=======
+    private ImageView ivSend, ivAttachment;
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
     private EditText etMessage;
     private DatabaseReference mRootRef;
     private FirebaseAuth firebaseAuth;
@@ -88,7 +110,10 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     private static final int REQUEST_CODE_PICK_IMAGE=101;
     private static final int REQUEST_CODE_PICK_VIDEO=103;
     private static final int REQUEST_CODE_CAPTURE_IMAGE=102;
+<<<<<<< HEAD
     private static final int REQUEST_CODE_FORWARD_MSG = 104;
+=======
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
 
 
     private DatabaseReference databaseReferenceMessages;
@@ -97,7 +122,11 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     private BottomSheetDialog bottomSheetDialog;
 
     private LinearLayout llProgress;
+<<<<<<< HEAD
     private String userName, photoName;
+=======
+
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -185,6 +214,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         view.findViewById(R.id.ivClose).setOnClickListener(this);
         bottomSheetDialog.setContentView(view);
 
+<<<<<<< HEAD
         if(getIntent().hasExtra(Extras.MESSAGE) && getIntent().hasExtra(Extras.MESSAGE_ID) && getIntent().hasExtra(Extras.MESSAGE_TYPE)){
             String message = getIntent().getStringExtra(Extras.MESSAGE);
             String messageId = getIntent().getStringExtra(Extras.MESSAGE_ID);
@@ -217,6 +247,8 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
             }
         }
+=======
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
     }
 
     private void sendMessage(String msg, String msgType, String pushId){
@@ -372,6 +404,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
                 Uri uri = data.getData();
                 uploadFile(uri, Constants.MESSAGE_TYPE_VIDEO);
             }
+<<<<<<< HEAD
             else if(requestCode == REQUEST_CODE_FORWARD_MSG){
                 Intent intent = new Intent(this, ChatActivity.class);
                 intent.putExtra(Extras.USER_KEY, data.getStringExtra(Extras.USER_KEY));
@@ -385,6 +418,8 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
                 startActivity(intent);
                 finish();
             }
+=======
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
         }
     }
 
@@ -495,6 +530,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
             else{
                 Toast.makeText(this, R.string.permission_required_to_access,Toast.LENGTH_SHORT).show();
             }
+<<<<<<< HEAD
         }
     }
 
@@ -676,6 +712,8 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
             catch (Exception ex){
                 Toast.makeText(ChatActivity.this, getString(R.string.failed_to_download, ex.getMessage()), Toast.LENGTH_SHORT).show();
             }
+=======
+>>>>>>> 0163d96b71a7108bfb8dfc5e3fe883f3715c490b
         }
     }
 
