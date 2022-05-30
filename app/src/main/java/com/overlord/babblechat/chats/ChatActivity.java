@@ -2,6 +2,7 @@ package com.overlord.babblechat.chats;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -15,8 +16,11 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -25,6 +29,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -60,7 +65,8 @@ import static android.provider.MediaStore.ACTION_IMAGE_CAPTURE;
 
 public class ChatActivity extends AppCompatActivity implements View.OnClickListener{
 
-    private ImageView ivSend, ivAttachment;
+    private ImageView ivSend, ivAttachment, ivProfile;
+    private TextView tvUserName, tvUserStatus;
     private EditText etMessage;
     private DatabaseReference mRootRef;
     private FirebaseAuth firebaseAuth;
@@ -85,6 +91,7 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
     private BottomSheetDialog bottomSheetDialog;
 
     private LinearLayout llProgress;
+    private String userName, photoName;
 
 
     @Override
@@ -92,6 +99,21 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
 
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setTitle("");
+            ViewGroup actionBarLayout = (ViewGroup) getLayoutInflater().inflate(R.layout.custom_action_bar, null);
+
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setHomeButtonEnabled(true);
+            actionBar.setElevation(0);
+
+            actionBar.setCustomView(actionBarLayout);
+            actionBar.setDisplayOptions(actionBar.getDisplayOptions() | ActionBar.DISPLAY_SHOW_CUSTOM);
+        }
+
+        ivProfile = findViewById(R.id.ivProfile);
+        tvUserName = findViewById(R.id.tvUserName);
         ivSend = findViewById(R.id.ivSend);
         ivAttachment = findViewById(R.id.ivAttachment);
         etMessage = findViewById(R.id.etMessage);
@@ -107,6 +129,28 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
 
         if(getIntent().hasExtra(Extras.USER_KEY)){
             chatUserId = getIntent().getStringExtra(Extras.USER_KEY);
+        }
+        if (getIntent().hasExtra(Extras.USER_NAME))
+            userName = getIntent().getStringExtra(Extras.USER_NAME);
+
+        if (getIntent().hasExtra(Extras.PHOTO_NAME))
+            photoName = getIntent().getStringExtra(Extras.PHOTO_NAME);
+
+
+        tvUserName.setText(userName);
+        if(!TextUtils.isEmpty(photoName) && photoName!=null) {
+            StorageReference photoRef = FirebaseStorage.getInstance().getReference().child(Constants.IMAGES_FOLDER + "/" + photoName);
+
+            photoRef.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                @Override
+                public void onSuccess(Uri uri) {
+                    Glide.with(ChatActivity.this)
+                            .load(uri)
+                            .placeholder(R.drawable.profile)
+                            .error(R.drawable.profile)
+                            .into(ivProfile);
+                }
+            });
         }
 
         rvMessages = findViewById(R.id.rvMessages);
@@ -403,5 +447,20 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
                 Toast.makeText(this, R.string.permission_required_to_access,Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int itemId = item.getItemId();
+        switch (itemId) {
+            case android.R.id.home:
+                finish();
+                break;
+
+            default:
+                break;
+
+        }
+        return super.onOptionsItemSelected(item);
     }
 }

@@ -62,4 +62,8 @@
     <string name="permission_required_to_access">Permission Required to access files</string>
     <string name="upload_progress">Uploading %1$s (%2$s %%)</string>
     <string name="failed_to_upload">Failed to upload : %1$s</string>
+    <string name="forward">Forward</string>
+    <string name="delete">Delete</string>
+    <string name="share">Share</string>
+    <string name="download">Download</string>
 </resources>

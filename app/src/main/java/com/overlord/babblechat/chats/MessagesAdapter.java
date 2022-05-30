@@ -6,6 +6,9 @@ import android.net.Uri;
 import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -24,48 +27,56 @@ import java.util.Date;
 import java.util.List;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ActionMode;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
-public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.MessageViewHolder>{
+public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.MessageViewHolder> {
 
     private Context context;
     private List<MessageModel> messageList;
     private FirebaseAuth firebaseAuth;
 
-    public MessagesAdapter(Context context, List<MessageModel> messageList){
+    private ActionMode actionMode;
+    private  ConstraintLayout selectedView;
+
+    public MessagesAdapter(Context context, List<MessageModel> messageList) {
         this.context = context;
         this.messageList = messageList;
     }
 
     @NonNull
-    @NotNull
     @Override
-    public MessagesAdapter.MessageViewHolder onCreateViewHolder(@NonNull @NotNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.message_layout,parent,false);
+    public MessagesAdapter.MessageViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(context).inflate(R.layout.message_layout, parent, false);
         return new MessageViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull @NotNull MessagesAdapter.MessageViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull final MessagesAdapter.MessageViewHolder holder, int position) {
+
         MessageModel message = messageList.get(position);
         firebaseAuth = FirebaseAuth.getInstance();
-        String currentUserId = firebaseAuth.getCurrentUser().getUid();
+        String currentUserId= firebaseAuth.getCurrentUser().getUid();
 
         String fromUserId = message.getMessageFrom();
 
         SimpleDateFormat sfd = new SimpleDateFormat("dd-MM-yyyy HH:mm");
+
         String dateTime = sfd.format(new Date(message.getMessageTime()));
         String [] splitString = dateTime.split(" ");
         String messageTime = splitString[1];
 
         if(fromUserId.equals(currentUserId)){
 
-            if(message.getMessageType().equals(Constants.MESSAGE_TYPE_TEXT)){
+            if(message.getMessageType().equals(Constants.MESSAGE_TYPE_TEXT))
+            {
                 holder.llSent.setVisibility(View.VISIBLE);
                 holder.llSentImage.setVisibility(View.GONE);
             }
-            else{
+            else
+            {
                 holder.llSent.setVisibility(View.GONE);
                 holder.llSentImage.setVisibility(View.VISIBLE);
             }
@@ -81,21 +92,25 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
                     .placeholder(R.drawable.ic_image)
                     .into(holder.ivSent);
         }
-        else{
-            if(message.getMessageType().equals(Constants.MESSAGE_TYPE_TEXT)){
+        else
+        {
+            if(message.getMessageType().equals(Constants.MESSAGE_TYPE_TEXT)) {
                 holder.llReceived.setVisibility(View.VISIBLE);
                 holder.llReceivedImage.setVisibility(View.GONE);
             }
-            else{
+            else
+            {
                 holder.llReceived.setVisibility(View.GONE);
                 holder.llReceivedImage.setVisibility(View.VISIBLE);
             }
+
             holder.llSent.setVisibility(View.GONE);
             holder.llSentImage.setVisibility(View.GONE);
 
             holder.tvReceivedMessage.setText(message.getMessage());
             holder.tvReceivedMessageTime.setText(messageTime);
             holder.tvImageReceivedTime.setText(messageTime);
+
             Glide.with(context)
                     .load(message.getMessage())
                     .placeholder(R.drawable.ic_image)
@@ -110,17 +125,35 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
             @Override
             public void onClick(View view) {
                 String messageType = view.getTag(R.id.TAG_MESSAGE_TYPE).toString();
-                Uri uri = Uri.parse(view.getTag(R.id.TAG_MESSAGE).toString();
-                if(messageType.equals(Constants.MESSAGE_TYPE_VIDEO)){
-                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                Uri uri = Uri.parse(view.getTag(R.id.TAG_MESSAGE).toString());
+                if(messageType.equals(Constants.MESSAGE_TYPE_VIDEO))
+                {
+                    Intent intent = new Intent(Intent.ACTION_VIEW,uri);
                     intent.setDataAndType(uri, "video/mp4");
                     context.startActivity(intent);
                 }
-                else if(messageType.equals(Constants.MESSAGE_TYPE_IMAGE){
-                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                else if(messageType.equals(Constants.MESSAGE_TYPE_IMAGE)){
+                    Intent intent = new Intent(Intent.ACTION_VIEW,uri);
                     intent.setDataAndType(uri, "image/jpg");
                     context.startActivity(intent);
                 }
+
+            }
+        });
+
+        holder.clMessage.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                if(actionMode!=null)
+                    return false;
+
+                selectedView = holder.clMessage;
+
+                actionMode = ((AppCompatActivity)context).startSupportActionMode(actionModeCallBack);
+
+                holder.clMessage.setBackgroundColor(context.getResources().getColor(R.color.icon_green));
+
+                return  true;
             }
         });
     }
@@ -130,7 +163,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
         return messageList.size();
     }
 
-    public class MessageViewHolder extends RecyclerView.ViewHolder {
+    public class MessageViewHolder  extends  RecyclerView.ViewHolder{
 
         private LinearLayout llSent, llReceived, llSentImage, llReceivedImage;
         private TextView tvSentMessage, tvSentMessageTime, tvReceivedMessage, tvReceivedMessageTime;
@@ -138,30 +171,77 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.Messag
         private TextView tvImageSentTime, tvImageReceivedTime;
         private ConstraintLayout clMessage;
 
-
-        public MessageViewHolder(@NonNull @NotNull View itemView) {
+        public MessageViewHolder(@NonNull View itemView) {
             super(itemView);
 
             llSent = itemView.findViewById(R.id.llSent);
             llReceived = itemView.findViewById(R.id.llReceived);
             tvSentMessage = itemView.findViewById(R.id.tvSentMessage);
             tvSentMessageTime = itemView.findViewById(R.id.tvSentMessageTime);
+
             tvReceivedMessage = itemView.findViewById(R.id.tvReceivedMessage);
             tvReceivedMessageTime = itemView.findViewById(R.id.tvReceivedMessageTime);
+
+            clMessage = itemView.findViewById(R.id.clMessage);
+
             llSentImage = itemView.findViewById(R.id.llSentImage);
             llReceivedImage = itemView.findViewById(R.id.llReceivedImage);
-            ivSent = itemView.findViewById(R.id.ivSent);
-            ivReceived = itemView.findViewById(R.id.ivReceived);
+            ivSent =itemView.findViewById(R.id.ivSent);
+            ivReceived =itemView.findViewById(R.id.ivReceived);
+
             tvImageSentTime = itemView.findViewById(R.id.tvSentImageTime);
             tvImageReceivedTime = itemView.findViewById(R.id.tvReceivedImageTime);
 
-
-
-
-
-
-
-            clMessage = itemView.findViewById(R.id.clMessage);
         }
     }
+
+    public  ActionMode.Callback actionModeCallBack = new ActionMode.Callback() {
+        @Override
+        public boolean onCreateActionMode(ActionMode actionMode, Menu menu) {
+
+            MenuInflater inflater = actionMode.getMenuInflater();
+            inflater.inflate(R.menu.menu_chat_options, menu);
+
+            String selectedMessageType = String.valueOf(selectedView.getTag(R.id.TAG_MESSAGE_TYPE));
+            if(selectedMessageType.equals(Constants.MESSAGE_TYPE_TEXT))
+            {
+                MenuItem itemDownload = menu.findItem(R.id.mnuDownload);
+                itemDownload.setVisible(false);
+            }
+            return true;
+        }
+
+        @Override
+        public boolean onPrepareActionMode(ActionMode actionMode, Menu menu) {
+            return false;
+        }
+
+        @Override
+        public boolean onActionItemClicked(ActionMode actionMode, MenuItem menuItem) {
+
+            String selectedMessageId = String.valueOf(selectedView.getTag(R.id.TAG_MESSAGE_ID));
+            String selectedMessage = String.valueOf(selectedView.getTag(R.id.TAG_MESSAGE));
+            String selectedMessageType = String.valueOf(selectedView.getTag(R.id.TAG_MESSAGE_TYPE));
+
+            int itemId = menuItem.getItemId();
+            switch (itemId)
+            {
+                case  R.id.mnuDelete:
+                    break;
+                case  R.id.mnuDownload:
+                    break;
+                case  R.id.mnuShare:
+                    break;
+                case  R.id.mnuForward:
+            }
+            return false;
+        }
+
+        @Override
+        public void onDestroyActionMode(ActionMode actionMode) {
+            actionMode =null;
+            selectedView.setBackgroundColor(context.getResources().getColor(R.color.white));
+        }
+    };
+
 }
