@@ -63,6 +63,8 @@ public class ChatFragment extends Fragment {
     public void onViewCreated(@NonNull @NotNull View view, @Nullable @org.jetbrains.annotations.Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        userIds = new ArrayList<>();
+
         rvChatList = view.findViewById(R.id.rvChats);
         tvEmptyChatList = view.findViewById(R.id.tvEmptyChatList);
 
