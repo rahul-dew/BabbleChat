@@ -833,6 +833,3 @@ public class ChatActivity extends AppCompatActivity implements View.OnClickListe
         super.onBackPressed();
     }
 }
-
-
-
